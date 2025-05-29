@@ -11,39 +11,71 @@ import java.util.Optional;
 @Service
 public class EmployeeService implements EmployeeUseCase {
 
-    private final EmployeeRepository employeeRepository;
+    private final EmployeeRepository repository;
 
-    public EmployeeService(EmployeeRepository employeeRepository) {
-        this.employeeRepository = employeeRepository;
+    public EmployeeService(EmployeeRepository repository) {
+        this.repository = repository;
     }
 
     @Override
     public Employee create(Employee employee) {
-        return employeeRepository.save(employee);
+        try {
+            return repository.save(employee);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao criar funcionário: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public List<Employee> findAll() {
-        return employeeRepository.findAll();
+        try {
+            return repository.findAll();
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao buscar funcionários: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public Optional<Employee> findById(Long id) {
-        return employeeRepository.findById(id);
+        try {
+            return repository.findById(id);
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao buscar funcionário: " + e.getMessage(), e);
+        }
     }
 
     @Override
     public Employee update(Long id, Employee employee) {
-        Optional<Employee> existing = employeeRepository.findById(id);
-        if (existing.isEmpty()) {
-            throw new RuntimeException("Employee not found");
+        try {
+            Optional<Employee> existing = repository.findById(id);
+            if (existing.isEmpty()) {
+                throw new IllegalStateException("Funcionário não encontrado para atualização");
+            }
+
+            Employee toUpdate = existing.get();
+            toUpdate.setName(employee.getName());
+            toUpdate.setEmail(employee.getEmail());
+
+            return repository.save(toUpdate);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao atualizar funcionário: " + e.getMessage(), e);
         }
-        employee.setId(id);
-        return employeeRepository.save(employee);
     }
 
     @Override
     public void delete(Long id) {
-        employeeRepository.deleteById(id);
+        try {
+            Optional<Employee> existing = repository.findById(id);
+            if (existing.isEmpty()) {
+                throw new IllegalStateException("Funcionário não encontrado para exclusão");
+            }
+            repository.deleteById(id);
+        } catch (IllegalStateException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException("Erro ao excluir funcionário: " + e.getMessage(), e);
+        }
     }
 }
